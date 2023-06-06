@@ -1,29 +1,25 @@
-# Project:
-#   VQA
-# Description:
-#   Main train file for VQA model
-# Author: 
-#   Sergio Tascon-Morales
-
-
-# IMPORTANT: All configurations are made through the yaml config file which is located in config/<dataset>/<file>.yaml. The path to this file is
-#           specified using CLI arguments, with --path_config <path_to_yaml_file> . If you don't use comet ml, set the parameter comet_ml to False
-
-
+import os 
+import argparse
 import torch 
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import misc.io as io
-from core.datasets import loaders_factory
-from core.models import model_factory
-from core.train_vault import criterions, optimizers, train_utils, looper, comet
+from datasets.medical_vqa import loaders_factory
+from models.medical_vqa import model_factory
+from models.train_vault import criterions, optimizers, train_utils, looper, comet
 
 # read config name from CLI argument --path_config
-args = io.get_config_file_name()
+parser = argparse.ArgumentParser(
+    description='Read config file name',
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+parser.add_argument('--path_config', default='configs/vilmedic/default_consistency.yaml', type=str, help='path to a yaml options file') 
+args = parser.parse_args()
 
 def main():
     # read config file
-    config = io.read_config(args.path_config)
-    print('config done')
+    with open(args.path_config, "r") as ymlfile:
+        config = yaml.load(ymlfile, Loader=yaml.FullLoader)
+
     # define device as gpu (if available) or cpu
     device = torch.device('cuda' if torch.cuda.is_available() and config['cuda'] else 'cpu')
 
@@ -66,28 +62,23 @@ def main():
     # train loop
     for epoch in range(start_epoch, config['epochs']+1):
 
-        # train for one epoch
+        # # train for one epoch
         # train_epoch_metrics = train(train_loader, model, criterion, optimizer, device, epoch, config, logbook, comet_exp=comet_experiment, consistency_term=consisterm)
 
-        # log training metrics to comet, if required
-        # comet.log_metrics(comet_experiment, train_epoch_metrics, epoch)
-
-        # validate for one epoch
+        # # validate for one epoch
         validate(val_loader, model, criterion, device, epoch, config, logbook, comet_exp=comet_experiment, consistency_term=consisterm)
         break
-        # log val metrics to comet, if required
-        # comet.log_metrics(comet_experiment, val_epoch_metrics, epoch)
 
-        # if val metric has stagnated, reduce LR
+        # # if val metric has stagnated, reduce LR
         # scheduler.step(val_epoch_metrics[config['metric_to_monitor']])
 
-        # save validation answers for current epoch
+        # # save validation answers for current epoch
         # train_utils.save_results(val_results, epoch, config, path_logs)
         # logbook.save_logbook(path_logs)
 
         # early_stopping(val_epoch_metrics, config['metric_to_monitor'], model, optimizer, epoch)
 
-        # if patience was reached, stop train loop
+        # # if patience was reached, stop train loop
         # if early_stopping.early_stop: 
         #     print("Early stopping")
         #     break
